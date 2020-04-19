@@ -75,9 +75,6 @@ function waitMs(x) {
 }
 
 async function runCycle() {
-  /*currentIndex = await redis.get('current') // Index of the next item to query
-  currentIndex = currentIndex ? currentIndex : 0 // In case we are starting off
-  current = await redis.lindex('products', currentIndex) // Fetch id of item*/
   current = await redis.lpop('products').catch() // Fetch the id of the next item to query.
   if (!current) { // In case no items are to be queried (as set in db)
     console.log(current)
@@ -91,6 +88,11 @@ async function runCycle() {
 }
 
 async function loop() {
+  if (await redis.get('stop') === "true") {
+    console.log('Stopping (as requested in db)')
+    await redis.disconnect()
+    return process.exit()
+  }
   await runCycle()
   await waitMs(timeBetweenCycles)
   loop()

@@ -1,3 +1,6 @@
+# Application specific
+dump.rdb
+
 # Logs
 logs
 *.log

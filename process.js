@@ -20,7 +20,7 @@ const redisConfig = {
   port: process.env.REDISPORT ? process.env.REDISPORT : 6379, // Redis port
   host: process.env.REDISHOST ? process.env.REDISHOST : '127.0.0.1', // Redis host
   family: 4, // 4 (IPv4) or 6 (IPv6)
-  password: process.env.REDISPASSWORD ? process.env.REDISPASSWORD : '',
+  password: process.env.REDISPASSWORD ? process.env.REDISPASSWORD : '', // Redis AUTH password. None if unchanged
   db: 0,
 }
 const timeBetweenCycles = 1000 // The amount of time between query cycles, in milliseconds
@@ -57,12 +57,14 @@ let getProduct = (product) => new Promise((resolve, reject) => {
 // Update product status in the db
 async function updateProduct(data) {
   data.product_info.quick_status.time = Date.now()
+  data.product_info.quick_status.flipProfit = data.product_info.quick_status.buyPrice - data.product_info.quick_status.sellPrice
   await redis.hset('prod' + data.product_info.product_id, data.product_info.quick_status)
 
   // TODO calc profit
   // TODO Add to history
   // TODO PUB/SUB
   // TODO Volumes
+  // TODO Rebuild full data
 }
 
 // Returns a promise resolving in x milliseconds

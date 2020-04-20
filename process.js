@@ -15,21 +15,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 const https = require('https')
 var Redis = require('ioredis')
 
-const apiKey = process.env.KEY ? process.env.KEY : '';
-const redisConfig = {
-  port: process.env.REDISPORT ? process.env.REDISPORT : 6379, // Redis port
-  host: process.env.REDISHOST ? process.env.REDISHOST : '127.0.0.1', // Redis host
-  family: 4, // 4 (IPv4) or 6 (IPv6)
-  password: process.env.REDISPASSWORD ? process.env.REDISPASSWORD : '', // Redis AUTH password. None if unchanged
-  db: 0,
-}
-const timeBetweenCycles = 1000 // The amount of time between query cycles, in milliseconds
+config = require('./config')
 
-let redis = new Redis(redisConfig);
+let redis = new Redis(config.redis);
 
 // Queries the Hypixel API to get the latest data regarding the
 let getProducts = () => new Promise((resolve, reject) => {
-  const req = https.get(`https://api.hypixel.net/skyblock/bazaar?key=${apiKey}`, res => {
+  const req = https.get(`https://api.hypixel.net/skyblock/bazaar?key=${config.apiKey}`, res => {
     if (res.statusCode != 200) console.log(`statusCode: ${res.statusCode}`)
 
     res.setEncoding('utf8')
@@ -81,7 +73,7 @@ async function runCycle() {
     Object.values(data.products).forEach((product) => updateProduct(product, data.lastUpdated)) // Update each product data
   }).catch(console.log) // TODO change catch response
 
-  console.log(new Date() + ` Queried the API. Next cycle in ${timeBetweenCycles} ms.`)
+  console.log(new Date() + ` Queried the API. Next cycle in ${config.timeBetweenCycles} ms.`)
 }
 
 async function loop() {
@@ -91,7 +83,7 @@ async function loop() {
     return process.exit()
   }
   await runCycle()
-  await waitMs(timeBetweenCycles)
+  await waitMs(config.timeBetweenCycles)
   loop()
 }
 

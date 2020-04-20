@@ -28,8 +28,8 @@ const timeBetweenCycles = 1000 // The amount of time between query cycles, in mi
 let redis = new Redis(redisConfig);
 
 // Queries the Hypixel API to get the latest data regarding the
-let getProduct = (product) => new Promise((resolve, reject) => {
-  const req = https.get(`https://api.hypixel.net/skyblock/bazaar/product?productId=${product}&key=${apiKey}`, res => {
+let getProducts = () => new Promise((resolve, reject) => {
+  const req = https.get(`https://api.hypixel.net/skyblock/bazaar?key=${apiKey}`, res => {
     if (res.statusCode != 200) console.log(`statusCode: ${res.statusCode}`)
 
     res.setEncoding('utf8')
@@ -55,10 +55,10 @@ let getProduct = (product) => new Promise((resolve, reject) => {
 })
 
 // Update product status in the db
-async function updateProduct(data) {
-  data.product_info.quick_status.time = Date.now()
-  data.product_info.quick_status.flipProfit = data.product_info.quick_status.buyPrice - data.product_info.quick_status.sellPrice
-  await redis.hset('prod' + data.product_info.product_id, data.product_info.quick_status)
+async function updateProduct(product, time) {
+  product.quick_status.time = time
+  product.quick_status.flipProfit = product.quick_status.buyPrice - product.quick_status.sellPrice
+  await redis.hset('prod' + product.product_id, product.quick_status)
 
   // TODO calc profit
   // TODO Add to history
@@ -77,16 +77,11 @@ function waitMs(x) {
 }
 
 async function runCycle() {
-  current = await redis.lpop('products').catch() // Fetch the id of the next item to query.
-  if (!current) { // In case no items are to be queried (as set in db)
-    console.log(current)
-    console.log('We did not find any items to query, stopping.')
-    await redis.disconnect()
-    return process.exit()
-  }
-  await getProduct(current).then(updateProduct).catch(console.log) // TODO change catch response
-  await redis.rpush('products', current)
-  console.log(new Date() + ` Queried the API for ${current}. Next cycle in ${timeBetweenCycles} ms.`)
+  await getProducts().then((data) => { // Fetch the data from the Hypixel API
+    Object.values(data.products).forEach((product) => updateProduct(product, data.lastUpdated)) // Update each product data
+  }).catch(console.log) // TODO change catch response
+
+  console.log(new Date() + ` Queried the API. Next cycle in ${timeBetweenCycles} ms.`)
 }
 
 async function loop() {

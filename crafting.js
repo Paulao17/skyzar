@@ -211,5 +211,29 @@ module.exports = {
   ENCHANTED_CACTUS_GREEN: [{
     craft: "ENCHANTED_CACTUS",
     cost: 160
+  }],
+  LOG: [{
+    craft: "ENCHANTED_OAK_LOG",
+    cost: 160
+  }],
+  "LOG:2": [{
+    craft: "ENCHANTED_BIRCH_LOG",
+    cost: 160
+  }],
+  "LOG:1": [{
+    craft: "ENCHANTED_SPRUCE_LOG",
+    cost: 160
+  }],
+  "LOG_2:1": [{
+    craft: "ENCHANTED_DARK_OAK_LOG",
+    cost: 160
+  }],
+  LOG2: [{
+    craft: "ENCHANTED_ACACIA_LOG",
+    cost: 160
+  }],
+  "LOG:3": [{
+    craft: "ENCHANTED_JUNGLE_LOG",
+    cost: 160
   }]
 }

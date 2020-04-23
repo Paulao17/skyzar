@@ -16,6 +16,7 @@ const https = require('https')
 var Redis = require('ioredis')
 
 config = require('./config')
+crafting = require('./crafting')
 
 let redis = new Redis(config.redis);
 
@@ -46,17 +47,36 @@ let getProducts = () => new Promise((resolve, reject) => {
   redis.incr('requests') // To tally the total number of requests
 })
 
+craftCatch = [] // TODO
 // Update product status in the db
-async function updateProduct(product, time) {
-  product.quick_status.time = time
-  product.quick_status.flipProfit = product.quick_status.buyPrice - product.quick_status.sellPrice
+async function updateProduct(product, time, data) {
+  product.quick_status.time = time // Add the time at which the info was valid
+  product.quick_status.flipProfit = product.quick_status.buyPrice - product.quick_status.sellPrice // Profit for flipping buy orders at current buyPrice
+
+  crafts = []
+  if (crafting[product.product_id])
+    crafting[product.product_id].forEach((craft) => {
+      profit = data.products[craft.craft].quick_status.buyPrice - craft.cost * product.quick_status.sellPrice // This is for buying from sellers and selling to buyers
+      profitPercentage = profit / data.products[craft.craft].quick_status.buyPrice // The percentage of profit for the craft
+      result = {craft: craft.craft, profit: profit, profitPercentage: profitPercentage, from: product.product_id}
+      crafts.push(result)
+      craftCatch.push({result})
+    })
+  product.quick_status.crafts = JSON.stringify(crafts)
+
   await redis.hset('prod' + product.product_id, product.quick_status)
 
   // TODO calc profit
   // TODO Add to history
   // TODO PUB/SUB
   // TODO Volumes
-  // TODO Rebuild full data
+}
+
+async function sortCrafts() {
+  crafts = craftCatch.sort((a, b) => a.profitPercentage - b.profitPercentage).reverse()
+  console.log(crafts)
+  craftCatch = []
+  await redis.set('responseCrafts', JSON.stringify(crafts))
 }
 
 // Returns a promise resolving in x milliseconds
@@ -70,8 +90,9 @@ function waitMs(x) {
 
 async function runCycle() {
   await getProducts().then((data) => { // Fetch the data from the Hypixel API
-    Object.values(data.products).forEach((product) => updateProduct(product, data.lastUpdated)) // Update each product data
+    Object.values(data.products).forEach((product) => updateProduct(product, data.lastUpdated, data)) // Update each product data
   }).catch(console.log) // TODO change catch response
+  await sortCrafts()
 
   console.log(new Date() + ` Queried the API. Next cycle in ${config.timeBetweenCycles} ms.`)
 }

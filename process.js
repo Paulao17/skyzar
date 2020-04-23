@@ -57,10 +57,10 @@ async function updateProduct(product, time, data) {
   if (crafting[product.product_id])
     crafting[product.product_id].forEach((craft) => {
       profit = data.products[craft.craft].quick_status.buyPrice - craft.cost * product.quick_status.sellPrice // This is for buying from sellers and selling to buyers
-      profitPercentage = profit / data.products[craft.craft].quick_status.buyPrice // The percentage of profit for the craft
+      profitPercentage = Math.floor(profit * 100 / data.products[craft.craft].quick_status.buyPrice) // The percentage of profit for the craft. Is rounded for sorting
       result = {craft: craft.craft, profit: profit, profitPercentage: profitPercentage, from: product.product_id}
       crafts.push(result)
-      craftCatch.push({result})
+      craftCatch.push(result)
     })
   product.quick_status.crafts = JSON.stringify(crafts)
 
